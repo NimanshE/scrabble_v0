@@ -69,17 +69,28 @@ class ScrabbleBoard:
 
     def visualize(self, filename='scrabble_board.png'):
         cell_size = 40
-        img_size = self.size * cell_size
+        img_size = (self.size + 1) * cell_size  # Increase size to accommodate row and column numbers
         img = Image.new('RGB', (img_size, img_size), color='beige')
         draw = ImageDraw.Draw(img)
         font = ImageFont.load_default()
 
+        # Draw the board with letters
         for i in range(self.size):
             for j in range(self.size):
-                x, y = j * cell_size, i * cell_size
+                x, y = (j + 1) * cell_size, (i + 1) * cell_size
                 draw.rectangle([x, y, x + cell_size, y + cell_size], outline='black')
                 if self.board[i][j].letter:
                     draw.text((x + cell_size // 4, y + cell_size // 4), self.board[i][j].letter.upper(), fill='black', font=font)
+
+        # Draw row numbers
+        for i in range(self.size):
+            y = (i + 1) * cell_size
+            draw.text((cell_size // 4, y + cell_size // 4), str(i), fill='black', font=font)
+
+        # Draw column numbers
+        for j in range(self.size):
+            x = (j + 1) * cell_size
+            draw.text((x + cell_size // 4, cell_size // 4), str(j), fill='black', font=font)
 
         img.save(filename)
         print(f"Board saved to '{filename}'")
