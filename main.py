@@ -2,7 +2,7 @@ from dawg import *
 from board import *
 import os
 
-lexicon_type = "lexicon/lexicon_ref"
+lexicon_type = "lexicon/lexicon_full"
 
 pickle_file = f"{lexicon_type}.pickle"
 lexicon_file = f"{lexicon_type}.txt"
