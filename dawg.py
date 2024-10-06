@@ -138,17 +138,18 @@ def build_dawg(lexicon):
 
 def build_trie_from_file(file_name):
     lexicon = open(file_name, "r").readlines()
-    lexicon = [word.strip("\n") for word in lexicon]
+    lexicon = [word.strip("\n").upper() for word in lexicon]
     return build_trie(lexicon)
 
 def build_dawg_from_file(file_name):
     lexicon = open(file_name, "r").readlines()
-    lexicon = [word.strip("\n") for word in lexicon]
+    lexicon = [word.strip("\n").upper() for word in lexicon]
     return build_dawg(lexicon)
 
 
 # check if word is in dawg
 def is_word_in_dawg(word, curr_node):
+    word = word.upper()
     for letter in word:
         if letter in curr_node.children:
             curr_node = curr_node.children[letter]
@@ -200,7 +201,7 @@ if __name__ == "__main__":
     lexicon_file_name = "lexicon/lexicon_ref.txt"
 
     big_list = open(lexicon_file_name, "r").readlines()
-    big_list = [word.strip("\n") for word in big_list]
+    big_list = [word.strip("\n").upper() for word in big_list]
     build_trie(big_list)
     root = build_dawg(big_list)
 
