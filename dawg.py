@@ -1,91 +1,213 @@
-class TrieNode:
-    def __init__(self):
-        self.children = {}
-        self.is_terminal = False
+import pickle
+from graphviz import Digraph
 
-class Trie:
-    def __init__(self):
-        self.root = TrieNode()
+def build_trie(lexicon):
+    num_nodes = 1
+    trie = {0: {}}
+    next_node = 1
+    for word in lexicon:
+        curr_node = 0
+        for let in word:
+            # if letter is present, move down its edge to next node
+            if let in trie[curr_node]:
+                edge_dict = trie[curr_node]
+                curr_node = edge_dict[let]
+            # otherwise, create new node and store its edge in current node
+            # then move to it
+            else:
+                num_nodes += 1
+                trie[next_node] = {}
+                trie[curr_node][let] = next_node
+                curr_node = next_node
+                next_node += 1
+        trie[curr_node]["END"] = True
 
-    def insert(self, word):
-        node = self.root
-        for char in word:
-            if char not in node.children:
-                node.children[char] = TrieNode()
-            node = node.children[char]
-        node.is_terminal = True
-
-def build_trie_from_file(filename, limit=None):
-    trie = Trie()
-    current = 0
-    with open(filename, 'r') as file:
-        for line in file:
-            word = line.strip().lower()
-            if word:
-                trie.insert(word)
-            current += 1
-            if limit and current == limit:
-                break
+    print(num_nodes)
     return trie
 
-class DAWGNode:
-    def __init__(self):
-        self.children = {}
-        self.is_terminal = False
 
-class DAWG:
-    def __init__(self):
-        self.root = DAWGNode()
-        self.nodes = {}
-
-    def insert(self, word):
-        node = self.root
-        for char in word:
-            if char not in node.children:
-                node.children[char] = DAWGNode()
-            node = node.children[char]
-        node.is_terminal = True
-
-    def minimize(self):
-        self.minimize_node(self.root)
-
-    def minimize_node(self, node):
-        for char, child in node.children.items():
-            self.minimize_node(child)
-        for char, child in node.children.items():
-            child_key = self.get_node_key(child)
-            if child_key in self.nodes:
-                node.children[char] = self.nodes[child_key]
-            else:
-                self.nodes[child_key] = child
-
-    def get_node_key(self, node):
-        key = (node.is_terminal,)
-        key += tuple(sorted((char, self.get_node_key(child)) for char, child in node.children.items()))
-        return key
-
-def trie_to_dawg(trie):
-    dawg = DAWG()
-    def convert(trie_node, dawg_node):
-        dawg_node.is_terminal = trie_node.is_terminal
-        for char, trie_child in trie_node.children.items():
-            dawg_child = DAWGNode()
-            dawg_node.children[char] = dawg_child
-            convert(trie_child, dawg_child)
-    convert(trie.root, dawg.root)
-    dawg.minimize()
-    return dawg
-
-def build_dawg_from_file(filename, limit=None):
-    trie = build_trie_from_file(filename, limit)
-    dawg = trie_to_dawg(trie)
-    return dawg
-
-
-def is_word_in_dawg(word, dawg):
-    node = dawg.root
-    for char in word:
-        if char not in node.children:
+# function to check validity if word is in trie
+def check_valid(word, trie):
+    curr_node = 0
+    for letter in word:
+        if letter in trie[curr_node]:
+            curr_node = trie[curr_node][letter]
+        else:
             return False
-        node = node.children[char]
-    return node.is_terminal
+    if "END" in trie[curr_node]:
+        return True
+    else:
+        return False
+
+# Define a node to be stored in DAWG
+class Node:
+    next_id = 0
+
+    def __init__(self):
+        self.is_terminal = False
+        self.id = Node.next_id
+        Node.next_id += 1
+        self.children = {}
+
+    def __str__(self):
+        out = [f"Node {self.id}\nChildren:\n"]
+        letter_child_dict = self.children.items()
+        for letter, child in letter_child_dict:
+            out.append(f" {letter} -> {child.id}\n")
+        return " ".join(out)
+
+    def __repr__(self):
+        out = []
+        if self.is_terminal:
+            out.append("1")
+        else:
+            out.append("0")
+        for key, val in self.children.items():
+            out.append(key)
+            out.append(str(val.id))
+        return "_".join(out)
+
+    def __hash__(self):
+        return self.__repr__().__hash__()
+
+    def __eq__(self, other):
+        return self.__repr__() == other.__repr__()
+
+
+# returns length of common prefix
+def length_common_prefix(prev_word, word):
+    shared_prefix_length = 0
+    for letter1, letter2 in (zip(prev_word, word)):
+        if letter1 == letter2:
+            shared_prefix_length += 1
+        else:
+            return shared_prefix_length
+    return shared_prefix_length
+
+
+# minimization function
+def minimize(curr_node, common_prefix_length, minimized_nodes, non_minimized_nodes):
+    # Start at end of the non_minimized_node list. Then minimize nodes until lengths of
+    # non_min_nodes and common_prefix are equal.
+    for _ in range(len(non_minimized_nodes), common_prefix_length, -1):
+
+        parent, letter, child = non_minimized_nodes.pop()
+
+        if child in minimized_nodes:
+            parent.children[letter] = minimized_nodes[child]
+
+        else:
+            minimized_nodes[child] = child
+
+        curr_node = parent
+
+    return curr_node
+
+
+# function to build dawg from given lexicon
+def build_dawg(lexicon):
+    root = Node()
+    minimized_nodes = {root: root}
+    non_minimized_nodes = []
+    curr_node = root
+    prev_word = ""
+    for i, word in enumerate(lexicon):
+        # get common prefix of new word and previous word
+        common_prefix_length = length_common_prefix(prev_word, word)
+
+        # minimization step: only call minimize if there are nodes in non_minimized_nodes
+        if non_minimized_nodes:
+            curr_node = minimize(curr_node, common_prefix_length, minimized_nodes, non_minimized_nodes)
+
+        # adding new nodes after the common prefix
+        for letter in word[common_prefix_length:]:
+            next_node = Node()
+            curr_node.children[letter] = next_node
+            non_minimized_nodes.append((curr_node, letter, next_node))
+            curr_node = next_node
+
+        # by the end of this process, curr_node should always be a terminal node
+        curr_node.is_terminal = True
+        prev_word = word
+        # if i % 1000 == 0:
+        #     print(i)
+
+    minimize(curr_node, 0, minimized_nodes, non_minimized_nodes)
+    print(len(minimized_nodes))
+    return root
+
+def build_trie_from_file(file_name):
+    lexicon = open(file_name, "r").readlines()
+    lexicon = [word.strip("\n") for word in lexicon]
+    return build_trie(lexicon)
+
+def build_dawg_from_file(file_name):
+    lexicon = open(file_name, "r").readlines()
+    lexicon = [word.strip("\n") for word in lexicon]
+    return build_dawg(lexicon)
+
+
+# check if word is in dawg
+def is_word_in_dawg(word, curr_node):
+    for letter in word:
+        if letter in curr_node.children:
+            curr_node = curr_node.children[letter]
+        else:
+            return False
+    if curr_node.is_terminal:
+        return True
+    else:
+        return False
+
+
+def visualize_dawg(dawg, filename="dawg_visualization"):
+    dot = Digraph(comment="DAWG Visualization")
+    dot.attr(rankdir="LR", dpi="300")
+
+    # Set default node attributes
+    dot.attr('node', shape='circle', width='0.3', height='0.3', style='filled', color='black', fillcolor='white')
+
+    def add_nodes_edges(node, visited=None):
+        if visited is None:
+            visited = set()
+
+        if id(node) in visited:
+            return
+
+        visited.add(id(node))
+        node_id = str(id(node))
+
+        # Set node attributes based on whether it's terminal
+        if node.is_terminal:
+            dot.node(node_id, shape="doublecircle", fillcolor="lightblue", label="")
+        else:
+            dot.node(node_id, label="")
+
+        for char, child in node.children.items():
+            add_nodes_edges(child, visited)
+            dot.edge(node_id, str(id(child)), label=char, fontsize='14', fontweight='bold')
+
+    add_nodes_edges(dawg)
+
+    # Increase overall graph size for better visibility
+    dot.attr(size='40,40')
+
+    dot.render(filename, view=True, format="png", cleanup=True)
+
+
+if __name__ == "__main__":
+
+    lexicon_file_name = "lexicon/lexicon_ref.txt"
+
+    big_list = open(lexicon_file_name, "r").readlines()
+    big_list = [word.strip("\n") for word in big_list]
+    build_trie(big_list)
+    root = build_dawg(big_list)
+
+    visualize_dawg(root)
+
+    dawg_dump = lexicon_file_name.replace(".txt", ".pickle")
+
+    file_handler = open(dawg_dump, "wb")
+    pickle.dump(root, file_handler)
+    file_handler.close()

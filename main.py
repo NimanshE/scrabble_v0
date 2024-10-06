@@ -1,7 +1,7 @@
 from dawg import *
 from board import *
 
-lexicon_file = 'lexicon_ref.txt'
+lexicon_file = 'lexicon/lexicon_ref.txt'
 
 dawg = build_dawg_from_file(lexicon_file)
 
