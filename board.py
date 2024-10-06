@@ -1,19 +1,36 @@
-import numpy as np
+from dawg import *
+import regex as re
+import random
+import copy
 from PIL import Image, ImageDraw, ImageFont
 
 
 class Square:
-    def __init__(self, letter=None):
+    # default behavior is blank square, no score modifier, all cross-checks valid
+    def __init__(self, letter=None, modifier="Normal", sentinel=1):
         self.letter = letter
-        self.cross_checks_0 = [1] * 26
-        self.cross_checks_1 = [1] * 26
+        self.cross_checks_0 = [sentinel] * 26
+        self.cross_checks_1 = [sentinel] * 26
         self.cross_checks = self.cross_checks_0
+        self.modifier = modifier
+        self.visible = True
+        if sentinel == 0:
+            self.visible = False
 
     def __str__(self):
-        return self.letter if self.letter else "_"
+        if not self.visible:
+            return ""
+        if not self.letter:
+            return "_"
+        else:
+            return self.letter
 
+    # maintain two separate cross-check lists depending on if the board is transpose or not
     def check_switch(self, is_transpose):
-        self.cross_checks = self.cross_checks_1 if is_transpose else self.cross_checks_0
+        if is_transpose:
+            self.cross_checks = self.cross_checks_1
+        else:
+            self.cross_checks = self.cross_checks_0
 
 
 class ScrabbleBoard:
