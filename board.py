@@ -11,6 +11,12 @@ class Modifier(Enum):
 
 
 class Square:
+    points_dict = {'A' : 1, 'B' : 3, 'C' : 3, 'D' : 2, 'E' : 1, 'F' : 4, 'G' : 2,
+                   'H' : 4, 'I' : 1, 'J' : 8, 'K' : 5, 'L' : 1, 'M' : 3, 'N' : 1,
+                   'O' : 1, 'P' : 3, 'Q' : 10, 'R' : 1, 'S' : 1, 'T' : 1, 'U' : 1,
+                   'V' : 4, 'W' : 4, 'X' : 8, 'Y' : 4, 'Z' : 10}
+
+
     def __init__(self, letter=None, modifier=Modifier.NORMAL):
         self.letter = letter
         self.modifier = modifier
@@ -51,6 +57,8 @@ class ScrabbleBoard:
             self.board[i][j].modifier = Modifier.DOUBLE_LETTER
 
     def place_word(self, word, row, col, direction):
+        word = word.upper()
+
         if direction not in ['across', 'down']:
             raise ValueError("Direction must be 'across' or 'down'")
 
@@ -64,6 +72,25 @@ class ScrabbleBoard:
                 raise ValueError("Word doesn't fit on the board")
             for i, letter in enumerate(word):
                 self.board[row + i][col].letter = letter
+
+    def naive_score(self, word, row, col, direction):
+        word = word.upper()
+
+        score = 0
+        word_multiplier = 1
+        for i, letter in enumerate(word):
+            square = self.board[row + i][col] if direction == 'down' else self.board[row][col + i]
+            letter_multiplier = 1
+            if square.modifier == Modifier.DOUBLE_LETTER:
+                letter_multiplier = 2
+            elif square.modifier == Modifier.TRIPLE_LETTER:
+                letter_multiplier = 3
+            elif square.modifier == Modifier.DOUBLE_WORD:
+                word_multiplier *= 2
+            elif square.modifier == Modifier.TRIPLE_WORD:
+                word_multiplier *= 3
+            score += Square.points_dict[letter] * letter_multiplier
+        return score * word_multiplier
 
     def visualize(self, filename='scrabble_board.png'):
         cell_size = 40
