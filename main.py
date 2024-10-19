@@ -20,3 +20,7 @@ board = ScrabbleBoard()
 board.place_word("cats", 7, 7, 'across')
 board.place_word("ears", 6, 8, 'down')
 board.visualize()
+
+anchor_squares = board.get_anchor_squares()
+
+print(f"Anchor squares: {anchor_squares}")
