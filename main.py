@@ -4,21 +4,7 @@ import os
 
 lexicon_type = "lexicon/lexicon_full"
 
-pickle_file = f"{lexicon_type}.pickle"
-lexicon_file = f"{lexicon_type}.txt"
-
-if os.path.exists(pickle_file):
-    try:
-        with open(pickle_file, "rb") as to_load:
-            dawg = pickle.load(to_load)
-    except Exception as e:
-        print(f"Error loading pickle file: {e}")
-        dawg = build_dawg_from_file(lexicon_file)
-else:
-    if os.path.exists(lexicon_file):
-        dawg = build_dawg_from_file(lexicon_file)
-    else:
-        raise FileNotFoundError(f"Neither {pickle_file} nor {lexicon_file} exists.")
+dawg = build_dawg_from_file(lexicon_type)
 
 # check sample words to see if they are in the dawg
 checklist = ["eats", "sleeps", "pants", "dog"]
