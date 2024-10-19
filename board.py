@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 class Modifier(Enum):
     NORMAL = ("Normal", "white")
-    DOUBLE_LETTER = ("2LS", "green")
+    DOUBLE_LETTER = ("2LS", "cyan")
     TRIPLE_LETTER = ("3LS", "blue")
     DOUBLE_WORD = ("2WS", "pink")
     TRIPLE_WORD = ("3WS", "red")
@@ -65,7 +65,7 @@ class ScrabbleBoard:
             for i, letter in enumerate(word):
                 self.board[row + i][col].letter = letter
 
-    def visualize(self, filename='scrabble_board_v2.png'):
+    def visualize(self, filename='scrabble_board.png'):
         cell_size = 40
         img_size = (self.size + 1) * cell_size
         img = Image.new('RGB', (img_size, img_size), color='beige')
@@ -109,4 +109,4 @@ if __name__ == "__main__":
     board = ScrabbleBoard()
     board.place_word("cats", 7, 7, "across")
     board.place_word("ears", 6, 8, "down")
-    board.visualize()
+    board.visualize(filename="script_viz.png")
