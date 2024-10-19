@@ -1,6 +1,5 @@
-from dawg import *
 from board import *
-import os
+from dawg import *
 
 lexicon_type = "lexicon/lexicon_full"
 

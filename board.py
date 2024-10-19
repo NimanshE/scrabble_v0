@@ -1,103 +1,94 @@
-from dawg import *
-import regex as re
-import random
-import copy
+from enum import Enum
 from PIL import Image, ImageDraw, ImageFont
 
 
+class Modifier(Enum):
+    NORMAL = ("Normal", "white")
+    DOUBLE_LETTER = ("2LS", "green")
+    TRIPLE_LETTER = ("3LS", "blue")
+    DOUBLE_WORD = ("2WS", "pink")
+    TRIPLE_WORD = ("3WS", "red")
+
+
 class Square:
-    # default behavior is blank square, no score modifier, all cross-checks valid
-    def __init__(self, letter=None, modifier="Normal", sentinel=1):
+    def __init__(self, letter=None, modifier=Modifier.NORMAL):
         self.letter = letter
-        self.cross_checks_0 = [sentinel] * 26
-        self.cross_checks_1 = [sentinel] * 26
-        self.cross_checks = self.cross_checks_0
         self.modifier = modifier
-        self.visible = True
-        if sentinel == 0:
-            self.visible = False
 
     def __str__(self):
-        if not self.visible:
-            return ""
         if not self.letter:
             return "_"
         else:
             return self.letter
-
-    # maintain two separate cross-check lists depending on if the board is transpose or not
-    def check_switch(self, is_transpose):
-        if is_transpose:
-            self.cross_checks = self.cross_checks_1
-        else:
-            self.cross_checks = self.cross_checks_0
 
 
 class ScrabbleBoard:
     def __init__(self):
         self.size = 15
         self.board = [[Square() for _ in range(self.size)] for _ in range(self.size)]
-        self.point_dict = {"A": 1, "B": 3, "C": 3, "D": 2, "E": 1, "F": 4, "G": 2, "H": 4,
-                           "I": 1, "J": 8, "K": 5, "L": 1, "M": 3, "N": 1, "O": 1, "P": 3,
-                           "Q": 10, "R": 1, "S": 1, "T": 1, "U": 1, "V": 4, "W": 4, "X": 8,
-                           "Y": 8, "Z": 10, "%": 0}
-        self.is_transpose = False
-        self.upper_cross_check = []
-        self.lower_cross_check = []
+        self._setup_board()
+
+    def _setup_board(self):
+        # Set up triple word squares
+        for i, j in [(0, 0), (0, 7), (0, 14), (7, 0), (7, 14), (14, 0), (14, 7), (14, 14)]:
+            self.board[i][j].modifier = Modifier.TRIPLE_WORD
+
+        # Set up double word squares
+        for i, j in [(1, 1), (2, 2), (3, 3), (4, 4), (1, 13), (2, 12), (3, 11), (4, 10),
+                     (13, 1), (12, 2), (11, 3), (10, 4), (13, 13), (12, 12), (11, 11), (10, 10)]:
+            self.board[i][j].modifier = Modifier.DOUBLE_WORD
+
+        # Set up triple letter squares
+        for i, j in [(1, 5), (1, 9), (5, 1), (5, 5), (5, 9), (5, 13), (9, 1), (9, 5), (9, 9), (9, 13), (13, 5),
+                     (13, 9)]:
+            self.board[i][j].modifier = Modifier.TRIPLE_LETTER
+
+        # Set up double letter squares
+        for i, j in [(0, 3), (0, 11), (2, 6), (2, 8), (3, 0), (3, 7), (3, 14),
+                     (6, 2), (6, 6), (6, 8), (6, 12), (7, 3), (7, 11),
+                     (8, 2), (8, 6), (8, 8), (8, 12), (11, 0), (11, 7), (11, 14),
+                     (12, 6), (12, 8), (14, 3), (14, 11)]:
+            self.board[i][j].modifier = Modifier.DOUBLE_LETTER
 
     def place_word(self, word, row, col, direction):
+        if direction not in ['across', 'down']:
+            raise ValueError("Direction must be 'across' or 'down'")
+
         if direction == 'across':
+            if col + len(word) > self.size:
+                raise ValueError("Word doesn't fit on the board")
             for i, letter in enumerate(word):
-                if col + i < self.size:
-                    self.board[row][col + i].letter = letter
-        elif direction == 'down':
+                self.board[row][col + i].letter = letter
+        else:  # down
+            if row + len(word) > self.size:
+                raise ValueError("Word doesn't fit on the board")
             for i, letter in enumerate(word):
-                if row + i < self.size:
-                    self.board[row + i][col].letter = letter
+                self.board[row + i][col].letter = letter
 
-    def _transpose(self):
-        self.board = [list(row) for row in zip(*self.board)]
-        self.is_transpose = not self.is_transpose
-
-    def _update_cross_checks(self):
-        while self.upper_cross_check:
-            curr_square, lower_letter, lower_row, lower_col = self.upper_cross_check.pop()
-            curr_square.check_switch(self.is_transpose)
-
-            chr_val = 65
-            for i, ind in enumerate(curr_square.cross_checks):
-                if ind == 1:
-                    test_node = lower_letter  # Simplified for this context
-                    if chr(chr_val) != test_node:
-                        curr_square.cross_checks[i] = 0
-                chr_val += 1
-
-        while self.lower_cross_check:
-            curr_square, upper_letter, upper_row, upper_col = self.lower_cross_check.pop()
-            curr_square.check_switch(self.is_transpose)
-
-            chr_val = 65
-            for i, ind in enumerate(curr_square.cross_checks):
-                if ind == 1:
-                    test_node = upper_letter  # Simplified for this context
-                    if chr(chr_val) != test_node:
-                        curr_square.cross_checks[i] = 0
-                chr_val += 1
-
-    def visualize(self, filename='scrabble_board.png'):
+    def visualize(self, filename='scrabble_board_v2.png'):
         cell_size = 40
-        img_size = (self.size + 1) * cell_size  # Increase size to accommodate row and column numbers
+        img_size = (self.size + 1) * cell_size
         img = Image.new('RGB', (img_size, img_size), color='beige')
         draw = ImageDraw.Draw(img)
         font = ImageFont.load_default()
 
-        # Draw the board with letters
         for i in range(self.size):
             for j in range(self.size):
                 x, y = (j + 1) * cell_size, (i + 1) * cell_size
+                square = self.board[i][j]
+
+                # Draw modifier circle
+                if square.modifier != Modifier.NORMAL:
+                    draw.ellipse([x + 5, y + 5, x + cell_size - 5, y + cell_size - 5],
+                                 fill=square.modifier.value[1])
+
+                # Draw cell border
                 draw.rectangle([x, y, x + cell_size, y + cell_size], outline='black')
-                if self.board[i][j].letter:
-                    draw.text((x + cell_size // 4, y + cell_size // 4), self.board[i][j].letter.upper(), fill='black', font=font)
+
+                # Draw letter
+                if square.letter:
+                    draw.text((x + cell_size // 4, y + cell_size // 4),
+                              square.letter.upper(), fill='black', font=font)
 
         # Draw row numbers
         for i in range(self.size):
@@ -111,3 +102,11 @@ class ScrabbleBoard:
 
         img.save(filename)
         print(f"Board saved to '{filename}'")
+
+
+# Example usage
+if __name__ == "__main__":
+    board = ScrabbleBoard()
+    board.place_word("cats", 7, 7, "across")
+    board.place_word("ears", 6, 8, "down")
+    board.visualize()
