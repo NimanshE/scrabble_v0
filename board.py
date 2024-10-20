@@ -16,8 +16,8 @@ class Square:
     def __init__(self, letter=None, modifier=Modifier.NORMAL):
         self.letter = letter
         self.modifier = modifier
-        self.across_cross_check = list("abcdefghijklmnopqrstuvwxyz")
-        self.down_cross_check = list("abcdefghijklmnopqrstuvwxyz")
+        self.across_cross_check = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ") # used when playing down
+        self.down_cross_check = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ") # used when playing across
 
     def __str__(self):
         if not self.letter:
@@ -118,6 +118,12 @@ class ScrabbleBoard:
         def get_valid_letters(prefix, suffix, direction):
             valid_letters = []
             for letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ':
+                # check if prefix and suffix are empty
+                # if yes, then any letter can be placed, and is thus valid
+                if not prefix and not suffix:
+                    valid_letters.append(letter)
+                    continue
+
                 word = prefix + letter + suffix
                 if is_word_in_dawg(word, self.dawg_root):
                     valid_letters.append(letter)
@@ -198,6 +204,7 @@ if __name__ == "__main__":
     print(f"Anchor squares: {anchor_squares}")
 
     # print the cross checks for the anchor squares before updating
+    print("Cross checks before updating:")
     for i, j in anchor_squares:
         print(f"({i}, {j}): across: {board.board[i][j].across_cross_check}, down: {board.board[i][j].down_cross_check}")
 
@@ -205,6 +212,7 @@ if __name__ == "__main__":
     board.update_cross_checks()
 
     # print the cross checks for the anchor squares after updating
+    print("Cross checks after updating:")
     for i, j in anchor_squares:
         print(f"({i}, {j}): across: {board.board[i][j].across_cross_check}, down: {board.board[i][j].down_cross_check}")
 
