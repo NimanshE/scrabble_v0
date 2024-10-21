@@ -102,6 +102,14 @@ def build_dawg_from_file(file_name):
 
         return dawg
 
+def lookup(word, curr_node):
+    node = curr_node
+    for letter in word:
+        if letter in node.children:
+            node = node.children[letter]
+        else:
+            return None
+    return node
 
 # check if word is in dawg
 def is_word_in_dawg(word, curr_node):
@@ -115,6 +123,7 @@ def is_word_in_dawg(word, curr_node):
         return True
     else:
         return False
+
 
 
 def visualize_dawg(dawg, filename="dawg_visualization"):
