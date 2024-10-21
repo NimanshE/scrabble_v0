@@ -26,9 +26,18 @@ class Board:
         row, col = pos
         self._tiles[row][col] = tile
 
+    def place_word(self, word, pos, direction):
+        row, col = pos
+        for letter in word:
+            self.set_tile((row, col), letter)
+            if direction == 'across':
+                col += 1
+            else:
+                row += 1
+
     def in_bounds(self, pos):
         row, col = pos
-        return row >= 0 and row < self.size and col >= 0 and col < self.size
+        return 0 <= row < self.size and 0 <= col < self.size
 
     def is_empty(self, pos):
         return self.in_bounds(pos) and self.get_tile(pos) is None
@@ -44,7 +53,12 @@ class Board:
 
 def sample_board():
     result = Board(7)
-    result.set_tile((1, 1), 'O')
-    result.set_tile((2, 1), 'F')
-    result.set_tile((2, 5), 'R')
+    result.place_word("cats", (1, 1), 'across')
+    result.place_word("ears", (0, 2), 'down')
     return result
+
+if __name__ == '__main__':
+    board = Board(15)
+    board.place_word("cats", (7, 7), 'across')
+    board.place_word("ears", (6, 8), 'down')
+    print(board)

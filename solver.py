@@ -1,5 +1,5 @@
-from board import *
-from dawg import *
+from letter_tree import build_tree_from_file
+from board import sample_board
 
 class SolveState:
     def __init__(self, dictionary, board, rack):
@@ -70,7 +70,7 @@ class SolveState:
                 legal_here = []
                 for letter in 'abcdefghijklmnopqrstuvwxyz':
                     word_formed = letters_before + letter + letters_after
-                    if is_word_in_dawg(word_formed, self.dictionary):
+                    if self.dictionary.is_word(word_formed):
                         legal_here.append(letter)
             result[pos] = legal_here
         return result
@@ -102,7 +102,7 @@ class SolveState:
                     self.rack.append(next_letter)
 
     def extend_after(self, partial_word, current_node, next_pos, anchor_filled):
-        if not self.board.is_filled(next_pos) and current_node.is_terminal and anchor_filled:
+        if not self.board.is_filled(next_pos) and current_node.is_word and anchor_filled:
             self.legal_move(partial_word, self.before(next_pos))
         if self.board.in_bounds(next_pos):
             if self.board.is_empty(next_pos):
@@ -138,7 +138,7 @@ class SolveState:
                     while self.board.is_filled(self.before(scan_pos)):
                         scan_pos = self.before(scan_pos)
                         partial_word = self.board.get_tile(scan_pos) + partial_word
-                    pw_node = lookup(partial_word, self.dictionary)
+                    pw_node = self.dictionary.lookup(partial_word)
                     if pw_node is not None:
                         self.extend_after(
                             partial_word,
@@ -152,12 +152,15 @@ class SolveState:
                     while self.board.is_empty(self.before(scan_pos)) and self.before(scan_pos) not in anchors:
                         limit = limit + 1
                         scan_pos = self.before(scan_pos)
-                    self.before_part("", self.dictionary, anchor_pos, limit)
+                    self.before_part("", self.dictionary.root, anchor_pos, limit)
 
-lexicon_type = "lexicon/lexicon_basic"
-dawg = build_dawg_from_file(lexicon_type)
 
-solver = SolveState(dawg, sample_board(), ['E', 'F', 'F', 'E', 'C', 'T'])
-print(solver.board)
-print()
-solver.find_all_options()
+if __name__ == '__main__':
+    board = sample_board()
+    rack = ['e', 'f', 'f', 'e', 'c', 't']
+    solver = SolveState(build_tree_from_file(), board, rack)
+
+    print(board)
+    print()
+
+    solver.find_all_options()
