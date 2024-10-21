@@ -35,3 +35,48 @@ def build_tree_from_file(file_name = 'lexicon/lexicon_basic.txt'):
             word = line.strip()
             words.append(word)
     return LetterTree(words)
+
+from graphviz import Digraph
+
+def visualize_tree(tree, file_path="assets/lexicon_tree"):
+    dot = Digraph(comment='Letter Tree')
+    dot.attr(rankdir="LR", dpi="300")
+
+    # Set default node attributes
+    dot.attr('node', shape='circle', width='0.3', height='0.3', style='filled', color='black', fillcolor='white')
+
+    def add_nodes_edges(node, dot, parent=None, edge_label="", visited=None):
+        if visited is None:
+            visited = set()
+
+        if id(node) in visited:
+            return
+
+        visited.add(id(node))
+        node_id = str(id(node))
+
+        # Set node attributes based on whether it's a word
+        if node.is_word:
+            dot.node(node_id, shape="doublecircle", fillcolor="lightblue", label="")
+        else:
+            dot.node(node_id, label="")
+
+        for letter, child in node.children.items():
+            add_nodes_edges(child, dot, node, letter, visited)
+            dot.edge(node_id, str(id(child)), label=letter, fontsize='14', fontweight='bold')
+
+    dot.node(str(id(tree.root)), 'Root')
+    add_nodes_edges(tree.root, dot)
+    dot.render(file_path, format='png', cleanup=True)
+
+if __name__ == '__main__':
+    lexicon_type = "lexicon/lexicon_ref.txt"
+    tree = build_tree_from_file(lexicon_type)
+
+    print("Do you want to visualize the tree? (y/n)")
+    visualize = input()
+    if visualize == 'y':
+        visualize_tree(tree)
+        print(f"Tree visualization saved as assets/lexicon_tree.png")
+    else:
+        print("Tree visualization skipped")
