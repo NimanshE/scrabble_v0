@@ -8,6 +8,7 @@ class SolveState:
         self.rack = rack
         self.cross_check_results = None
         self.direction = None
+        self.found_moves = []
 
     def before(self, pos):
         row, col = pos
@@ -38,16 +39,12 @@ class SolveState:
             return row, col + 1
 
     def legal_move(self, word, last_pos):
-        print('found a word:', word)
-        board_if_we_played_that = self.board.copy()
         play_pos = last_pos
         word_idx = len(word) - 1
         while word_idx >= 0:
-            board_if_we_played_that.set_tile(play_pos, word[word_idx])
-            word_idx -= 1
             play_pos = self.before(play_pos)
-        print(board_if_we_played_that)
-        print()
+            word_idx -= 1
+        self.found_moves.append((word, self.after(play_pos), self.direction))
 
     def cross_check(self):
         result = dict()
@@ -164,3 +161,6 @@ if __name__ == '__main__':
     print()
 
     solver.find_all_options()
+    print("Legal moves:")
+    for move in solver.found_moves:
+        print(move)

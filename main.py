@@ -9,5 +9,8 @@ board.place_word("off", (1, 1), 'down')
 rack = ['e', 'f', 'f', 'e', 'c', 't']
 lexicon_tree = build_tree_from_file("lexicon/lexicon_basic.txt")
 solver = SolveState(lexicon_tree, board, rack)
-print(board, end='\n\n')
 solver.find_all_options()
+print(board, end='\n\n')
+print("Legal moves:")
+for move in solver.found_moves:
+    print(move)
