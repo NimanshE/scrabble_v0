@@ -1,4 +1,5 @@
 from enum import Enum
+from PIL import Image, ImageDraw, ImageFont
 
 class Modifier(Enum):
     NORMAL = ("Normal", "white")
@@ -90,14 +91,55 @@ class Board:
             result.set_tile(pos, self.get_tile(pos))
         return result
 
+    def visualize(self, filename='scrabble_board.png'):
+        cell_size = 40
+        img_size = (self.size + 1) * cell_size
+        img = Image.new('RGB', (img_size, img_size), color='beige')
+        draw = ImageDraw.Draw(img)
+        font = ImageFont.load_default()
+
+        for i in range(self.size):
+            for j in range(self.size):
+                x, y = (j + 1) * cell_size, (i + 1) * cell_size
+                square = self._tiles[i][j]
+
+                # Draw modifier circle
+                if square.modifier != Modifier.NORMAL:
+                    draw.ellipse([x + 5, y + 5, x + cell_size - 5, y + cell_size - 5],
+                                 fill=square.modifier.value[1])
+
+                # Draw cell border
+                draw.rectangle([x, y, x + cell_size, y + cell_size], outline='black')
+
+                # Draw letter
+                if square.letter:
+                    draw.text((x + cell_size // 4, y + cell_size // 4),
+                              square.letter.upper(), fill='black', font=font)
+
+        # Draw row numbers
+        for i in range(self.size):
+            y = (i + 1) * cell_size
+            draw.text((cell_size // 4, y + cell_size // 4), str(i), fill='black', font=font)
+
+        # Draw column numbers
+        for j in range(self.size):
+            x = (j + 1) * cell_size
+            draw.text((x + cell_size // 4, cell_size // 4), str(j), fill='black', font=font)
+
+        img.save(filename)
+        print(f"Board saved to '{filename}'")
+
 def sample_board():
-    result = Board(7)
-    result.place_word("cats", (1, 1), 'across')
-    result.place_word("ears", (0, 2), 'down')
+    result = Board(15)
+    result.place_word("cats", (7, 7), 'across')
+    result.place_word("ears", (6, 8), 'down')
+    result.place_word("off", (1, 1), 'down')
     return result
 
 if __name__ == '__main__':
     board = Board(15)
     board.place_word("cats", (7, 7), 'across')
     board.place_word("ears", (6, 8), 'down')
+    board.place_word("off", (1, 1), 'down')
     print(board)
+    board.visualize()
