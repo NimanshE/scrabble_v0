@@ -1,15 +1,54 @@
+from enum import Enum
+
+class Modifier(Enum):
+    NORMAL = ("Normal", "white")
+    DOUBLE_LETTER = ("2LS", "cyan")
+    TRIPLE_LETTER = ("3LS", "blue")
+    DOUBLE_WORD = ("2WS", "pink")
+    TRIPLE_WORD = ("3WS", "red")
+
+class Square:
+
+    def __init__(self, letter=None, modifier=Modifier.NORMAL):
+        self.letter = letter
+        self.modifier = modifier
+
+    def __str__(self):
+        if not self.letter:
+            return "_"
+        else:
+            return self.letter
+
 class Board:
     def __init__(self, size):
         self.size = size
-        self._tiles = []
-        for _ in range(size):
-            row = []
-            for _ in range(size):
-                row.append(None)
-            self._tiles.append(row)
+        self._tiles = [[Square() for _ in range(self.size)] for _ in range(self.size)]
+        self._setup_board()
+
+    def _setup_board(self):
+        # Set up triple word squares
+        for i, j in [(0, 0), (0, 7), (0, 14), (7, 0), (7, 14), (14, 0), (14, 7), (14, 14)]:
+            self._tiles[i][j].modifier = Modifier.TRIPLE_WORD
+
+        # Set up double word squares
+        for i, j in [(1, 1), (2, 2), (3, 3), (4, 4), (1, 13), (2, 12), (3, 11), (4, 10),
+                     (13, 1), (12, 2), (11, 3), (10, 4), (13, 13), (12, 12), (11, 11), (10, 10)]:
+            self._tiles[i][j].modifier = Modifier.DOUBLE_WORD
+
+        # Set up triple letter squares
+        for i, j in [(1, 5), (1, 9), (5, 1), (5, 5), (5, 9), (5, 13), (9, 1), (9, 5), (9, 9), (9, 13), (13, 5),
+                     (13, 9)]:
+            self._tiles[i][j].modifier = Modifier.TRIPLE_LETTER
+
+        # Set up double letter squares
+        for i, j in [(0, 3), (0, 11), (2, 6), (2, 8), (3, 0), (3, 7), (3, 14),
+                     (6, 2), (6, 6), (6, 8), (6, 12), (7, 3), (7, 11),
+                     (8, 2), (8, 6), (8, 8), (8, 12), (11, 0), (11, 7), (11, 14),
+                     (12, 6), (12, 8), (14, 3), (14, 11)]:
+            self._tiles[i][j].modifier = Modifier.DOUBLE_LETTER
 
     def __str__(self):
-        return '\n'.join(''.join(x if x is not None else '_' for x in row) for row in self._tiles)
+        return '\n'.join(''.join(str(tile) for tile in row) for row in self._tiles)
 
     def all_positions(self):
         result = []
@@ -20,11 +59,11 @@ class Board:
 
     def get_tile(self, pos):
         row, col = pos
-        return self._tiles[row][col]
+        return self._tiles[row][col].letter
 
     def set_tile(self, pos, tile):
         row, col = pos
-        self._tiles[row][col] = tile
+        self._tiles[row][col].letter = tile
 
     def place_word(self, word, pos, direction):
         row, col = pos
