@@ -1,6 +1,6 @@
-from letter_tree import *
+from letter_tree import build_tree_from_file
 from board import *
-from solver import *
+from solver import SolveState
 
 board = Board(15)
 board.place_word("cats", (7, 7), 'across')
