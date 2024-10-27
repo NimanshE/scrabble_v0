@@ -21,6 +21,13 @@ class Square:
             return self.letter
 
 class Board:
+
+    LETTER_SCORES = {
+        'a': 1, 'b': 3, 'c': 3, 'd': 2, 'e': 1, 'f': 4, 'g': 2, 'h': 4, 'i': 1,
+        'j': 8, 'k': 5, 'l': 1, 'm': 3, 'n': 1, 'o': 1, 'p': 3, 'q': 10, 'r': 1,
+        's': 1, 't': 1, 'u': 1, 'v': 4, 'w': 4, 'x': 8, 'y': 4, 'z': 10
+    }
+
     def __init__(self, size):
         self.size = size
         self._tiles = [[Square() for _ in range(self.size)] for _ in range(self.size)]
@@ -90,6 +97,168 @@ class Board:
         for pos in self.all_positions():
             result.set_tile(pos, self.get_tile(pos))
         return result
+
+    def calculate_score(self, word, pos, direction, rack_used):
+        """
+        Calculate the score for a move, including cross-words formed.
+
+        Args:
+            word (str): The word being placed
+            pos (tuple): Starting position (row, col)
+            direction (str): 'across' or 'down'
+            rack_used (list): List of letters used from the rack
+
+        Returns:
+            int: Total score for the move
+        """
+        total_score = 0
+        row, col = pos
+        word_multiplier = 1
+        main_word_score = 0
+        tiles_used = 0
+
+        # Score the main word
+        for letter in word:
+            curr_pos = (row, col)
+            letter_multiplier = 1
+            square = self._tiles[row][col]
+
+            # Only apply multipliers if the tile is being placed (not already on board)
+            if square.letter is None:
+                tiles_used += 1
+                if square.modifier == Modifier.DOUBLE_LETTER:
+                    letter_multiplier = 2
+                elif square.modifier == Modifier.TRIPLE_LETTER:
+                    letter_multiplier = 3
+                elif square.modifier == Modifier.DOUBLE_WORD:
+                    word_multiplier *= 2
+                elif square.modifier == Modifier.TRIPLE_WORD:
+                    word_multiplier *= 3
+
+            main_word_score += self.LETTER_SCORES[letter.lower()] * letter_multiplier
+
+            # Move to next position
+            if direction == 'across':
+                col += 1
+            else:
+                row += 1
+
+        main_word_score *= word_multiplier
+        total_score += main_word_score
+
+        # Score cross-words
+        row, col = pos
+        for i, letter in enumerate(word):
+            curr_pos = (row, col)
+            if self._tiles[row][col].letter is None:  # Only check for cross-words at new tile positions
+                cross_word = self._get_cross_word(curr_pos, direction)
+                if cross_word is not None:
+                    cross_score = self._score_cross_word(cross_word, curr_pos, direction, letter)
+                    total_score += cross_score
+
+            if direction == 'across':
+                col += 1
+            else:
+                row += 1
+
+        # Add bingo bonus (50 points) if all 7 tiles are used
+        if len(rack_used) == 7:
+            total_score += 50
+
+        return total_score
+
+    def _get_cross_word(self, pos, main_direction):
+        """Get complete cross-word at given position, if one exists."""
+        row, col = pos
+        cross_direction = 'down' if main_direction == 'across' else 'across'
+
+        # Find start of cross-word
+        start_row, start_col = row, col
+        while True:
+            if cross_direction == 'down':
+                if start_row > 0 and self._tiles[start_row - 1][col].letter is not None:
+                    start_row -= 1
+                else:
+                    break
+            else:
+                if start_col > 0 and self._tiles[row][start_col - 1].letter is not None:
+                    start_col -= 1
+                else:
+                    break
+
+        # Build cross-word if it exists
+        cross_word = ""
+        curr_row, curr_col = start_row, start_col
+        while curr_row < self.size and curr_col < self.size:
+            if cross_direction == 'down':
+                if curr_row == row and self._tiles[curr_row][col].letter is None:
+                    # This is where the new tile will go
+                    cross_word += "?"
+                elif self._tiles[curr_row][col].letter is not None:
+                    cross_word += self._tiles[curr_row][col].letter
+                else:
+                    break
+                curr_row += 1
+            else:
+                if curr_col == col and self._tiles[row][curr_col].letter is None:
+                    cross_word += "?"
+                elif self._tiles[row][curr_col].letter is not None:
+                    cross_word += self._tiles[row][curr_col].letter
+                else:
+                    break
+                curr_col += 1
+
+        # Return None if no cross-word is formed
+        return cross_word if len(cross_word) > 1 else None
+
+    def _score_cross_word(self, cross_word, pos, main_direction, new_letter):
+        """Score a cross-word formed by placing a tile."""
+        row, col = pos
+        word_multiplier = 1
+        word_score = 0
+
+        # Get starting position of cross-word
+        start_row, start_col = row, col
+        cross_direction = 'down' if main_direction == 'across' else 'across'
+        while True:
+            if cross_direction == 'down':
+                if start_row > 0 and self._tiles[start_row - 1][col].letter is not None:
+                    start_row -= 1
+                else:
+                    break
+            else:
+                if start_col > 0 and self._tiles[row][start_col - 1].letter is not None:
+                    start_col -= 1
+                else:
+                    break
+
+        # Score the cross-word
+        curr_row, curr_col = start_row, start_col
+        for letter in cross_word:
+            letter_multiplier = 1
+            curr_pos = (curr_row, curr_col)
+
+            # If this is the intersection point
+            if curr_row == row and curr_col == col:
+                square = self._tiles[curr_row][curr_col]
+                if square.modifier == Modifier.DOUBLE_LETTER:
+                    letter_multiplier = 2
+                elif square.modifier == Modifier.TRIPLE_LETTER:
+                    letter_multiplier = 3
+                elif square.modifier == Modifier.DOUBLE_WORD:
+                    word_multiplier *= 2
+                elif square.modifier == Modifier.TRIPLE_WORD:
+                    word_multiplier *= 3
+                word_score += self.LETTER_SCORES[new_letter.lower()] * letter_multiplier
+            else:
+                word_score += self.LETTER_SCORES[letter.lower()]
+
+            if cross_direction == 'down':
+                curr_row += 1
+            else:
+                curr_col += 1
+
+        return word_score * word_multiplier
 
     def visualize(self, filename='scrabble_board.png'):
         cell_size = 40

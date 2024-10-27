@@ -14,3 +14,4 @@ print(board, end='\n\n')
 print("Legal moves:")
 for move in solver.found_moves:
     print(move)
+board.visualize("assets/scoring_board_test.png")
