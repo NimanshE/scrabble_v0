@@ -6,6 +6,7 @@ class SolveState:
         self.dictionary = dictionary
         self.board = board
         self.rack = rack
+        self.reference_rack = rack.copy()
         self.cross_check_results = None
         self.direction = None
         self.found_moves = []
@@ -44,7 +45,7 @@ class SolveState:
         while word_idx >= 0:
             play_pos = self.before(play_pos)
             word_idx -= 1
-        self.found_moves.append((word, self.after(play_pos), self.direction))
+        self.found_moves.append((word, self.after(play_pos), self.direction, self.reference_rack))
 
     def cross_check(self):
         result = dict()
