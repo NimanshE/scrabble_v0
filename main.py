@@ -3,14 +3,17 @@ from board import *
 from solver import SolveState
 
 board = Board(15)
-rack = ['c', 'a', 't', 's', 'r', 'e']
+rack = ['c', 'a', 't', 's', 'f', 'i', 'a']
+score, letters_left = board.place_word("i", (7, 7), 'across', rack)
+# print score for cats and the letters left in the rack
+print("For i: ", score, letters_left)
 score, letters_left = board.place_word("cats", (7, 7), 'across', rack)
 # print score for cats and the letters left in the rack
 print("For cats: ", score, letters_left)
-score, letters_left = board.place_word("ears", (6, 8), 'down', rack)
+score, letters_left = board.place_word("fats", (6, 8), 'down', rack)
 # print score for ears and the letters left in the rack
 print("For ears: ", score, letters_left)
-score, letters_left = board.place_word("tea", (1, 1), 'down', rack)
+score, letters_left = board.place_word("sat", (1, 1), 'down', rack)
 # print score for off and the letters left in the rack
 print("For tea: ", score, letters_left)
 lexicon_tree = build_tree_from_file("lexicon/lexicon_basic.txt")

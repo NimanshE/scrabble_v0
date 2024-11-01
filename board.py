@@ -87,34 +87,57 @@ class Board:
             tuple: (score, remaining_rack)
         """
         # Create a copy of the rack to track used letters
-        rack_used = rack.copy()
-        row, col = pos
+        rack_used_cp1 = rack.copy()
+        row_cp1, col_cp1 = pos
 
-        # Calculate score using the existing method
-        score = self.calculate_score(word, pos, direction, rack.copy())
+        rack_used_cp2 = rack.copy()
+        row_cp2, col_cp2 = pos
 
         # Check if word can be placed
         for letter in word:
             # If the letter isn't already on the board, it must be in the rack
-            if self.get_tile((row, col)) is None:
+            if self.get_tile((row_cp2, col_cp2)) is None:
                 try:
-                    rack_used.remove(letter.lower())
+                    rack_used_cp2.remove(letter.lower())
+                except ValueError:
+                    # If letter not in rack, word can't be placed
+                    return 0, rack
+
+            # Move to next position
+            if direction == 'across':
+                col_cp2 += 1
+            else:
+                row_cp2 += 1
+
+        used_rack = rack.copy()
+        for letter in rack_used_cp2:
+            used_rack.remove(letter)
+
+        # Calculate score using the existing method
+        score = self.calculate_score(word, pos, direction, used_rack)
+
+        # Check if word can be placed
+        for letter in word:
+            # If the letter isn't already on the board, it must be in the rack
+            if self.get_tile((row_cp1, col_cp1)) is None:
+                try:
+                    rack_used_cp1.remove(letter.lower())
                 except ValueError:
                     # If letter not in rack, word can't be placed
                     return 0, rack
 
             # Place the letter
-            self.set_tile((row, col), letter)
+            self.set_tile((row_cp1, col_cp1), letter)
 
             # Move to next position
             if direction == 'across':
-                col += 1
+                col_cp1 += 1
             else:
-                row += 1
+                row_cp1 += 1
 
 
         # Determine the remaining rack
-        remaining_rack = rack_used
+        remaining_rack = rack_used_cp1
 
         return score, remaining_rack
 
@@ -335,10 +358,11 @@ class Board:
         print(f"Board saved to '{filename}'")
 
 def sample_board():
+    rack = ['c', 'a', 't', 's', 'e', 'r', 'a']
     result = Board(15)
-    result.place_word("cats", (7, 7), 'across')
-    result.place_word("ears", (6, 8), 'down')
-    result.place_word("off", (1, 1), 'down')
+    result.place_word("cats", (7, 7), 'across', rack)
+    result.place_word("ears", (6, 8), 'down', rack)
+    result.place_word("tea", (1, 1), 'down', rack)
     return result
 
 if __name__ == '__main__':

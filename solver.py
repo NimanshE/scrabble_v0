@@ -47,7 +47,11 @@ class SolveState:
             word_idx -= 1
         start_pos = self.after(play_pos)
         score = self.board.calculate_score(word, start_pos, self.direction, self.rack.copy())
-        self.found_moves.append((word, self.after(play_pos), self.direction, self.reference_rack, score))
+        # remove self.rack.copy() from self.reference_rack
+        used_rack = self.reference_rack.copy()
+        for letter in self.rack:
+            used_rack.remove(letter)
+        self.found_moves.append((word, self.after(play_pos), self.direction, used_rack, score))
 
     def cross_check(self):
         result = dict()
