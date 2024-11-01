@@ -73,14 +73,50 @@ class Board:
         row, col = pos
         self._tiles[row][col].letter = tile
 
-    def place_word(self, word, pos, direction):
+    def place_word(self, word, pos, direction, rack):
+        """
+        Place a word on the board and calculate the score.
+
+        Args:
+            word (str): The word to be placed
+            pos (tuple): Starting position (row, col)
+            direction (str): 'across' or 'down'
+            rack (list): Player's rack of available letters
+
+        Returns:
+            tuple: (score, remaining_rack)
+        """
+        # Create a copy of the rack to track used letters
+        rack_used = rack.copy()
         row, col = pos
+
+        # Calculate score using the existing method
+        score = self.calculate_score(word, pos, direction, rack.copy())
+
+        # Check if word can be placed
         for letter in word:
+            # If the letter isn't already on the board, it must be in the rack
+            if self.get_tile((row, col)) is None:
+                try:
+                    rack_used.remove(letter.lower())
+                except ValueError:
+                    # If letter not in rack, word can't be placed
+                    return 0, rack
+
+            # Place the letter
             self.set_tile((row, col), letter)
+
+            # Move to next position
             if direction == 'across':
                 col += 1
             else:
                 row += 1
+
+
+        # Determine the remaining rack
+        remaining_rack = rack_used
+
+        return score, remaining_rack
 
     def in_bounds(self, pos):
         row, col = pos
