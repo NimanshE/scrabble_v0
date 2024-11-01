@@ -237,6 +237,7 @@ class ScrabbleGame:
         print("\n--- GAME OVER ---")
         print(f"Final Board:")
         print(self.board)
+        self.board.visualize("assets/game_output.png")
 
         print("\nFinal Scores:")
         for player in self.players:
