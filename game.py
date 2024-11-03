@@ -12,12 +12,15 @@ class Player:
         self.rack = []
         self.score = 0
 
-    def choose_move(self, legal_moves):
+    def choose_move(self, game_state):
         """
         Method to be overridden by subclasses.
 
         Args:
-            legal_moves (list): List of legal moves for the player
+            game_state (dict): Dictionary containing:
+                - legal_moves (list): List of legal moves for the player
+                - board (Board): Current state of the game board
+                - tile_distribution (dict): Original distribution of tiles in the bag
 
         Returns:
             int: Index of chosen move or 0 to end game
@@ -28,16 +31,20 @@ class Player:
 class HumanPlayer(Player):
     """Human player implementation."""
 
-    def choose_move(self, legal_moves):
+    def choose_move(self, game_state):
         """
         Prompt human player to choose a move from the list of legal moves.
 
         Args:
-            legal_moves (list): List of legal moves
+            game_state (dict): Dictionary containing game state information
+                - legal_moves (list): List of legal moves
+                - board (Board): Current state of the game board
+                - tile_distribution (dict): Original distribution of tiles
 
         Returns:
             int: Index of chosen move or 0 to end game
         """
+        legal_moves = game_state['legal_moves']
         print(f"\n{self.name}'s turn. Current rack: {self.rack}")
         print("Legal moves:")
         for i, move in enumerate(legal_moves, 1):
@@ -52,6 +59,46 @@ class HumanPlayer(Player):
                 print("Invalid choice. Try again.")
             except ValueError:
                 print("Please enter a number.")
+
+
+class GreedyAIPlayer(Player):
+    """AI player that always chooses the highest-scoring legal move available."""
+
+    def choose_move(self, game_state):
+        """
+        Select the move with the highest score from the list of legal moves.
+
+        Args:
+            game_state (dict): Dictionary containing:
+                - legal_moves (list): List of legal moves
+                - board (Board): Current state of the game board
+                - tile_distribution (dict): Original distribution of tiles
+
+        Returns:
+            int: Index of chosen move or 0 if no moves available
+        """
+        legal_moves = game_state['legal_moves']
+
+        # If no legal moves are available, end turn
+        if not legal_moves:
+            return 0
+
+        # Find move with highest score
+        best_move_index = 1  # Initialize to first move
+        best_score = legal_moves[0][4]  # Score is the fifth element in move tuple
+
+        for i, move in enumerate(legal_moves[1:], 2):
+            current_score = move[4]
+            if current_score > best_score:
+                best_score = current_score
+                best_move_index = i
+
+        # Print the chosen move for transparency
+        chosen_move = legal_moves[best_move_index - 1]
+        print(f"{self.name} chooses to play '{chosen_move[0]}' at {chosen_move[1]} "
+              f"({chosen_move[2]}) for {chosen_move[4]} points")
+
+        return best_move_index
 
 
 class ScrabbleBag:
@@ -94,7 +141,7 @@ class ScrabbleBag:
 class ScrabbleGame:
     """Main game class to control game flow."""
 
-    def __init__(self, player1_name="Player 1", player2_name="Player 2"):
+    def __init__(self, player1, player2):
         """
         Initialize the game.
 
@@ -102,16 +149,18 @@ class ScrabbleGame:
             player1_name (str): Name of first player
             player2_name (str): Name of second player
         """
+
+        # Validate input types
+        if not isinstance(player1, Player) or not isinstance(player2, Player):
+            raise TypeError("Players must be instances of Player class or its subclasses")
+
         # Initialize board and lexicon
         self.board = Board(15)
-        self.lexicon_tree = build_tree_from_file()
+        self.lexicon_tree = build_tree_from_file(file_name="lexicon/lexicon_full.txt")
 
         # Initialize bag and players
         self.bag = ScrabbleBag()
-        self.players = [
-            HumanPlayer(player1_name),
-            HumanPlayer(player2_name)
-        ]
+        self.players = [player1, player2]
 
         # Fill initial racks
         for player in self.players:
@@ -119,6 +168,9 @@ class ScrabbleGame:
 
         # Randomly choose starting player
         self.current_player_idx = random.randint(0, 1)
+
+        # Add tracker for consecutive skipped turns
+        self.consecutive_skips = 0
 
     def start_game(self):
         """
@@ -145,11 +197,28 @@ class ScrabbleGame:
 
             if not legal_moves:
                 print(f"No moves available for {current_player.name}. Skipping turn.")
+                self.consecutive_skips += 1
+
+                # If both players have been skipped consecutively, end the game
+                if self.consecutive_skips >= 2:
+                    print("\nNeither player has any available moves. Game ending.")
+                    return self._end_game()
+
                 self._switch_player()
                 continue
 
+            # Reset consecutive skips counter since we found legal moves
+            self.consecutive_skips = 0
+
+            # Create game state dictionary
+            game_state = {
+                'legal_moves': legal_moves,
+                'board': self.board,
+                'tile_distribution': ScrabbleBag.TILE_DISTRIBUTION
+            }
+
             # Ask player to choose move
-            move_choice = current_player.choose_move(legal_moves)
+            move_choice = current_player.choose_move(game_state)
 
             # Check if game is ending
             if move_choice == 0:
@@ -250,5 +319,9 @@ class ScrabbleGame:
 
 # Run the game if script is executed directly
 if __name__ == '__main__':
-    game = ScrabbleGame()
+    # Create player instances
+    human_player = HumanPlayer("Human Player")
+    ai_player = GreedyAIPlayer("Greedy AI")
+
+    game = ScrabbleGame(human_player, ai_player)
     game.start_game()
