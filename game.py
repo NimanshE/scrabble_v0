@@ -214,7 +214,8 @@ class ScrabbleGame:
             game_state = {
                 'legal_moves': legal_moves,
                 'board': self.board,
-                'tile_distribution': ScrabbleBag.TILE_DISTRIBUTION
+                'tile_distribution': ScrabbleBag.TILE_DISTRIBUTION,
+                'lexicon_tree': self.lexicon_tree
             }
 
             # Ask player to choose move
