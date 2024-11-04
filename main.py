@@ -1,22 +1,13 @@
-from dawg import *
+from letter_tree import build_tree_from_file
 from board import *
+from solver import SolveState
+from game import *
+from adversarial_player import AdversarialAIPlayer
+from dumb_human_player import DumbHumanPlayer
 
-lexicon_file = 'lexicon_ref.txt'
+# ai_player1 = GreedyAIPlayer("Greedy AI")
+human_player = DumbHumanPlayer("Human")
+ai_player2 = AdversarialAIPlayer("Adversary AI")
 
-dawg = build_dawg_from_file(lexicon_file)
-
-# check sample words to see if they are in the dawg
-checklist = ["eats", "sleeps", "pants", "dog"]
-
-for word in checklist:
-    if is_word_in_dawg(word, dawg):
-        print(f"{word} is in the lexicon")
-    else:
-        print(f"{word} is not in the lexicon")
-
-board = ScrabbleBoard()
-
-# place some words on the board
-board.place_word("cats", 7, 7, 'across')
-board.place_word("ears", 6, 8, 'down')
-board.visualize()
+game = ScrabbleGame(human_player, ai_player2)
+game.start_game()
